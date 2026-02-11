@@ -1,0 +1,33 @@
+# --- ENTORNOS VIRTUALES ---
+env_tomate/
+venv/
+env/
+.env
+
+# --- PYTHON BITS ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- IMÁGENES Y RESULTADOS ---
+# Ignoramos los resultados para no llenar el repo de fotos procesadas
+resultado_*.jpg
+test_tomates.jpg
+# Ignorar todo el contenido dentro de la carpeta imagenes
+imagenes/*
+*.jpeg
+*.jpg
+*.png
+
+# EXCEPTO el archivo .gitkeep
+!imagenes/.gitkeep
+
+# --- SISTEMA OPERATIVO ---
+.DS_Store
+Thumbs.db
+
+# --- SEGURIDAD (Próxima fase) ---
+# Aquí guardaremos las llaves de Firebase/ThingSpeak
+claves.json
+*.json
+credentials.txt
