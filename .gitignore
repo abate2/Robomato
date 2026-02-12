@@ -31,3 +31,6 @@ Thumbs.db
 claves.json
 *.json
 credentials.txt
+ 
+# ---DATASETS---
+datasets/
