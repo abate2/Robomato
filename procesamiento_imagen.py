@@ -22,7 +22,7 @@ def analizar_cultivo(ruta_imagen):
         if area > 400:
             perimetro = cv2.arcLength(c, True)
             circularidad = 4 * np.pi * area / (perimetro * perimetro)
-            if circularidad > 0.5:
+            if circularidad > 0.7:
                 conteo_maduros += 1
                 ((x, y), radio) = cv2.minEnclosingCircle(c)
                 cv2.circle(imagen, (int(x), int(y)), int(radio), (0, 0, 255), 2)
@@ -40,7 +40,7 @@ def analizar_cultivo(ruta_imagen):
         if area > 600:
             perimetro = cv2.arcLength(cv, True)
             circularidad = 4 * np.pi * area / (perimetro * perimetro)
-            if circularidad > 0.5:
+            if circularidad > 0.7:
                 conteo_verdes += 1
                 ((x, y), radio) = cv2.minEnclosingCircle(cv)
                 cv2.circle(imagen, (int(x), int(y)), int(radio), (0, 255, 0), 2)
