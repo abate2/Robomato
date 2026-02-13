@@ -3,11 +3,11 @@ import cv2
 import os 
 
 # 1. Cargamos el modelo el mismo que se movio desde  el one drive de tu pc local
-modelo_path = os.path.join('runs', 'detect', 'train', 'weights', 'best.pt')
+modelo_path = os.path.join('runs', 'train_definitivo', 'weights', 'best.pt')
 model = YOLO(modelo_path)
 
 # 2. Ruta de una imagen para probar (asegúrate de que este archivo exista)
-ruta_img = os.path.join('datasets', 'tomates', 'images', 'Riped tomato_35.jpeg')
+ruta_img = os.path.join('datasets', 'tomates', 'images', 'unriped tomato_292.png')
 
 # 3. Realizar la detección
 print("La IA está pensando...")

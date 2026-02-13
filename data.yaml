@@ -2,5 +2,7 @@ path: ./datasets/tomates # Ruta hacia la carpeta del dataset
 train: images # Carpeta de entrenamiento
 val : images # Carpeta de validación (puede ser la misma que la de entrenamiento si no tienes una separada)
 
-names:
+nc: 2  # cantidad de clases a evaluar (en este caso, tomate maduro y tomate verde)
+names: # etiquetas de las clases que se pueden encontrar en el archivo .text
   0: tomate_maduro
+  1: tomate_verde
