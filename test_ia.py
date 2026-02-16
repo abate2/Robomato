@@ -7,7 +7,7 @@ modelo_path = os.path.join('runs', 'train_definitivo', 'weights', 'best.pt')
 model = YOLO(modelo_path)
 
 # 2. Ruta de una imagen para probar (asegúrate de que este archivo exista)
-ruta_img = os.path.join('datasets', 'tomates', 'images', 'unriped tomato_292.png')
+ruta_img = os.path.join('datasets', 'tomates', 'images', 'riped tomato_65.jpeg')
 
 # 3. Realizar la detección
 print("La IA está pensando...")
