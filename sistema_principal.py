@@ -2,15 +2,16 @@ import cv2
 from ultralytics import YOLO
 import os
 import time
+import config
 # Importamos tus funciones de conexión
 from conexion_firebase import conectar_firebase, enviar_reporte
 
 #Variables decada cuanto se enviara un reporte  
-MINUTOS_ENTRE_REPORTES = 10
+MINUTOS_ENTRE_REPORTES = 15
 SEGUNDOS_ENTRE_REPORTES = MINUTOS_ENTRE_REPORTES * 60
 
 # 1. Configuración Inicial
-modelo_path = os.path.join('runs','train_definitivo', 'weights', 'best.pt')
+modelo_path = config.RUTA_MODELO
 model = YOLO(modelo_path)
 
 # Conectamos a Firebase usando tu función
