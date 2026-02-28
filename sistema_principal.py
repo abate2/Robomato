@@ -5,6 +5,8 @@ import time
 import config
 # Importamos tus funciones de conexión
 from conexion_firebase import conectar_firebase, enviar_reporte
+from motor_control import MotorController
+from robot_brain import RobomatoBrain
 
 #Variables decada cuanto se enviara un reporte  
 MINUTOS_ENTRE_REPORTES = 15
@@ -13,6 +15,10 @@ SEGUNDOS_ENTRE_REPORTES = MINUTOS_ENTRE_REPORTES * 60
 # 1. Configuración Inicial
 modelo_path = config.RUTA_MODELO
 model = YOLO(modelo_path)
+
+# se instancia la clase RobomatoBrain con el controlador de motores(MotorController) para manejar la lógica de movimiento y corte.
+motor = MotorController()
+cerebro = RobomatoBrain(motor)
 
 # Conectamos a Firebase usando tu función
 ref_db = conectar_firebase()
@@ -29,13 +35,18 @@ print("Sincronizando con Firebase y activando IA...")
 #Guarda el tiempo exacto en que se ejecuta la línea dentro de la variable en segundos desde la época (1 de enero de 1970).
 utl_sincronizacion = time.time() # Para no saturar Firebase, enviaremos datos cada 10 segundos
 
-while True:
+while cap.isOpened():
     ret, frame = cap.read()
     if not ret: break
 
     # 4. IA con Tracking (persist=True mantiene el ID del tomate en movimiento)
     #🧩 4. conf=0.7 El nivel mínimo de confianza (70%).
     results = model.track(frame, persist=True, conf=0.7, tracker="bytetrack.yaml")
+
+    # 2. CEREBRO ROBOT (Acción física)
+    # Obtenemos dimensiones dinámicamente
+    alto, ancho, _ = frame.shape
+    estado_actual_robot = cerebro.procesar_detecciones(results, ancho, alto)
 
     # Simulación de sensores (Cámbialos manualmente para probar)
     temp_simulada = 27  # Simulamos un día caluroso
@@ -59,7 +70,10 @@ while True:
     # 5. Dibujar resultados en pantalla
     annotated_frame =results[0].plot()
 
-    # Texto informativo en la imagen
+    # Texto informativo en la imagen estado del robot
+    cv2.putText(annotated_frame, f"ESTADO ROBOT: {estado_actual_robot}", (20, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+    
+    # Texto informativo en la imagen tomates
     cv2.putText(annotated_frame, f"Maduros: {len(ids_maduros_contados)}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
     cv2.putText(annotated_frame, f"Verdes: {len(ids_verdes_contados)}", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     
@@ -71,7 +85,7 @@ while True:
     cv2.putText(annotated_frame, f"VENTILADOR: {estado_ventilador}", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, color_vent, 2)
 
     cv2.imshow('Control de Cosecha Inteligente', annotated_frame)
-  
+    
     # 6. Sincronización Automática con Firebase cada 10 segundos
     if time.time() - utl_sincronizacion > SEGUNDOS_ENTRE_REPORTES: 
         print(f"Enviando reporte... Maduros totales: {len(ids_maduros_contados)}")
