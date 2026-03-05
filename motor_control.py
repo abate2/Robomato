@@ -28,7 +28,8 @@ class MotorController:
         # Límites físicos (mm)
         self.LIMIT_X = 2000
         self.LIMIT_Y  = 1000
-        self.LIMIT_Z = 800
+        self.LIMIT_Z = 550
+        self.OFFSET_CAMARA_PINZA_Z = 50 # mm (Ajustar según montaje físico)
 
         # Estados de los finales de carrera (False = Libre, True = Presionado)
         self.stop_x = False
@@ -36,6 +37,9 @@ class MotorController:
         self.stop_z = False
 
         self.pos_x, self.pos_y, self.pos_z = 0, 0, 0
+
+        # Índice para controlar la fila actual en el ciclo de trabajo
+        self.fila_actual_index = 0 
 
         # Definición de Filas (Eje X)
         self.FILAS_X = [250, 750, 1250, 1750]
@@ -62,40 +66,47 @@ class MotorController:
             self.pos_z = 0
 
     def mover_a_fila(self, num_fila):
-        target_x = self.FILAS_X[num_fila - 1]
-        print(f">>> [X] Moviendo a Fila {num_fila}")
+        # Actualiza el índice (0, 1, 2 o 3) basándose en la fila (1, 2, 3 o 4)
+        self.fila_actual_index = num_fila - 1
+        target_x = self.FILAS_X[self.fila_actual_index]
+        print(f">>> [X] Moviendo a Fila {num_fila} (Carril central: {target_x}mm)")
         self._enviar_comando(f"G0 X{target_x}")
         self.pos_x = target_x
 
     def mover_a_centro(self, error_x, error_y):
         """
-        Mueve los motores proporcionalmente al error detectado por YOLO.
-        error_x/y: Distancia en píxeles desde el centro de la imagen.
+        Ajusta la posición usando X (horizontal) y Z (vertical) para centrar el tomate.
         """
+        kp = 0.5 # Ganancia proporcional para ajuste suave
 
-        kp = 0.5 # Constante de proporcionalidad (ajustar en campo)
+        if abs(error_x) > 15:# Ajustamos a 15px para más precisión
+            desplazamiento_x = int(error_x * kp)
+            nueva_pos_x = self.pos_x + desplazamiento_x
+            self._enviar_comando(f"G0 X{nueva_pos_x}")
+            self.pos_x = nueva_pos_x
 
-        if abs(error_x) > 20: # Zona muerta de 20px
-            pasos_x = int(error_x * kp)
-            self._enviar_pulsos("X", pasos_x)
+        # Usamos error_y (el de la imagen que otorga la camara) para ajustar el eje Z (Altura)
+        # Importante saber que el error_y es el de la imagen, no tiene que ver con el eje Y mecanico
+        if abs(error_y) > 15:
+            desplazamiento_z = int(error_y * kp)
+            nueva_pos_z = self.pos_z + desplazamiento_z
+            # Seguridad: No exceder el límite de 550mm
+            nueva_pos_z = max(0, min(nueva_pos_z, self.LIMIT_Z))
+            self._enviar_comando(f"G0 Z{nueva_pos_z}")
+            self.pos_z = nueva_pos_z
 
-        if abs(error_y) > 20:
-            pasos_y = int(error_y * kp)
-            self._enviar_pulsos("Y", pasos_y)
 
     def cortar(self):
-            print(">>> [BRAZO] Extendiendo actuador Z...")
-            time.sleep(0.5)
-            print(">>> [TIJERA] Realizando corte...")
-            time.sleep(1)
-            print(">>> [BRAZO] Retrayendo actuador Z.")
+        """Ejecuta el movimiento de compensación y activa el MG995."""
+        # Subimos en Z para que la pinza ocupe el lugar donde la cámara vio el pedúnculo
+        posicion_corte_z = self.pos_z - self.OFFSET_CAMARA_PINZA_Z
+        print(f">>> [BRAZO] Subiendo a posición de corte: {posicion_corte_z}mm")
+        self._enviar_comando(f"G0 Z{posicion_corte_z}")
 
-    def descargar_en_lateral(self):
-        print(">>> [Y] Llevando tomate a zona de descarga...")
-        self._enviar_comando("G0 Y0") # Vuelve al inicio del riel Y para soltar
-        self.pos_y = 0
-        # Baja el brazo si es necesario para la canasta
-        self.cortar()
+        print(">>> [PINZA] Cerrando cuchillas (MG995)...")
+        self._enviar_comando("M3") # Comando para activar el corte en el Arduino
+        time.sleep(1)
+        
         
     def regresar_a_inicio(self):
         print("Moviendo actuadores a Coordenada X=0, Y=0 (Punto de descarga)")
@@ -129,6 +140,19 @@ class MotorController:
         # self.serial_arduino.write(f"MOVE {eje} {pasos}\n".encode()) 
         pass
 
+    
+    def descargar_en_lateral(self):
+        """
+        Lógica para recolección por gravedad y retorno al carril de escaneo.
+        """
+        print(">>> [SISTEMA] Corte realizado. Esperando caída por gravedad...")
+        time.sleep(1.5) # Tiempo para que el tomate ruede por la manguera
+
+        # NUEVO: Regresar al centro de la fila en X para retomar el zig-zag
+        target_x = self.FILAS_X[self.fila_actual_index] 
+        print(f">>> [X] Regresando al carril de la fila: {target_x}mm")      
+        self._enviar_comando(f"G0 X{target_x}")
+        self.pos_x = target_x # Mover a la posición de descarga lateral
 
 
 

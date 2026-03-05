@@ -1,9 +1,13 @@
 #include <AccelStepper.h>
+#include <Servo.h>
 
 // Conversión de mm a Pasos (Basado en tornillo T8 y poleas GT2)
 const float STEPS_PER_MM_X = 80.0;  // Polea GT2 20 dientes
 const float STEPS_PER_MM_Y = 80.0;  // Polea GT2 20 dientes
 const float STEPS_PER_MM_Z = 400.0; // Tornillo T8 (8mm avance/vuelta)
+
+Servo pinzaCorte;
+#define PIN_SERVO 11 // Pin PWM en la RAMPS 1.6
 
 // Definición de Pines RAMPS 1.6
 #define X_STEP_PIN 54
@@ -46,6 +50,9 @@ void setup() {
   stepperY.setAcceleration(500);
   stepperZ.setMaxSpeed(1000); // El eje Z es más lento por el tornillo T8
   stepperZ.setAcceleration(300);
+
+  pinzaCorte.attach(PIN_SERVO);
+  pinzaCorte.write(0); // Inicia abierta
 }
 
 void loop() {
@@ -61,11 +68,14 @@ void loop() {
 }
 
 void procesarComando(String cmd) {
-  if (cmd == "G28") { // Comando de Homing (Calibración)
+  if (cmd == "G28") { 
     realizarHoming();
   } 
-  else if (cmd.startsWith("G0")) { // Movimiento lineal
+  else if (cmd.startsWith("G0")) { 
     parsearMovimiento(cmd);
+  }
+  else if (cmd == "M3") { // Nuevo comando para activar la pinza
+    ejecutarCorte();
   }
 }
 
@@ -110,4 +120,12 @@ void parsearMovimiento(String cmd) {
   }
 
   Serial.println("OK"); // Confirma a la Raspberry que ya procesó la orden
+}
+
+// Nueva función de corte real
+void ejecutarCorte() {
+  pinzaCorte.write(90); // Cierra la pinza (ajustar ángulo según prueba física)
+  delay(1000);
+  pinzaCorte.write(0);  // Abre la pinza
+  Serial.println("OK"); // // 4. Avisa a la Raspberry que terminó
 }
