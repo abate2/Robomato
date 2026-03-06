@@ -24,8 +24,14 @@ class RobomatoBrain:
             if self.estado_actual == self.ESTADO_BUSQUEDA:
                 # Realiza barrido vertical (Eje Z) antes de avanzar
                 self.robot.escanear_vertical()
-                # Avanza un tramo en el pasillo (Eje Y)
-                self.robot.pos_y += 150 # Avanza por el ancho del pasillo
+
+                # NUEVO: Calculamos la nueva posición y enviamos el comando físico
+                nueva_y = self.robot.pos_y + 150 # Avanza por el ancho del pasillo
+                print(f">>> [IA] No hay tomates. Avanzando a Y={nueva_y}mm")
+                
+                self.robot._enviar_comando(f"G0 Y{nueva_y}")
+                self.robot.pos_y = nueva_y # Actualizamos la memoria del robot
+                
                 if self.robot.pos_y > self.robot.LIMIT_Y:
                     self.cambiar_de_fila()
             return self.estado_actual
