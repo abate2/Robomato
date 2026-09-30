@@ -1,10 +1,14 @@
 #include <AccelStepper.h>
 #include <Servo.h>
 
-// Conversión de mm a Pasos (Basado en tornillo T8 y poleas GT2)
-const float STEPS_PER_MM_X = 80.0;  // Polea GT2 20 dientes
-const float STEPS_PER_MM_Y = 80.0;  // Polea GT2 20 dientes
-const float STEPS_PER_MM_Z = 400.0; // Tornillo T8 (8mm avance/vuelta)
+// Configuración de Calibración de Motores
+const float STEPS_PER_MM_X = 80.0;   // Correa GT2
+
+// EJE Y: Piñón M1.5 (16 dientes, Dp=24mm) + Driver A4988 1/16 micropasos
+// FÓRMULA DE RECALIBRACIÓN (por contracción del plástico en impresión 3D):
+// Nuevo_Valor = (42.44 * Distancia_Pedida_mm) / Distancia_Real_Medida_mm
+const float STEPS_PER_MM_Y = 42.44;  
+const float STEPS_PER_MM_Z = 400.0;  // Varilla / T8
 
 Servo pinzaCorte;
 #define PIN_SERVO 11 // Pin PWM en la RAMPS 1.6
