@@ -1,4 +1,4 @@
-import firebase_admin
+﻿import firebase_admin
 from firebase_admin import credentials, db
 import datetime
 import config
@@ -21,7 +21,7 @@ def conectar_firebase():
         return None
 
 #45. Función para enviar el reporte a Firebase
-def enviar_reporte(referencia, maduros, verdes, temp, humedad, bomba, ventilador): 
+def enviar_reporte(referencia, maduros, verdes, temp, humedad, bomba, ventilador, hum_ambiental=None): 
     total = maduros + verdes
     if total <= 0:
         print("⚠️ No se detectaron tomates. No se envió reporte.")
@@ -32,11 +32,18 @@ def enviar_reporte(referencia, maduros, verdes, temp, humedad, bomba, ventilador
         "maduros": maduros,
         "verdes": verdes,
         "porcentajes_madurez": int((maduros / total * 100)),
+        "sensores": {
+            "temperatura": temp,
+            "humedad_suelo": humedad,
+            "humedad_ambiental": hum_ambiental if hum_ambiental is not None else 0.0,
+            "estado_bomba": bomba,
+            "estado_ventilador": ventilador
+        },
         "sensores_simulados": {
-            "temperatura": temp, # Dato simulado 
-            "humedad_suelo": humedad, # Dato simulado
-            "estado_bomba": bomba, # Dato simulado
-            "estado_ventilador": ventilador # Dato simulado
+            "temperatura": temp,
+            "humedad_suelo": humedad,
+            "estado_bomba": bomba,
+            "estado_ventilador": ventilador
         }
     }
     # Intentar enviar a Firebase
@@ -81,5 +88,3 @@ def subir_datos_pendientes(referencia):
         
         os.remove(archivo) # Limpieza automática tras subir
         print("✅ Respaldo local sincronizado y limpiado.")
-
-

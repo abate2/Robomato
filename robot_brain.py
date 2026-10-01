@@ -1,4 +1,4 @@
-# este  archivo contiene la logica de control del robot, como la clase MotorController y funciones relacionadas con el movimiento y corte.
+﻿# este  archivo contiene la logica de control del robot, como la clase MotorController y funciones relacionadas con el movimiento y corte.
 class RobomatoBrain:
     def __init__(self, motor_controller):
         # Recibe el controlador de motores que ya creaste
@@ -6,11 +6,12 @@ class RobomatoBrain:
         self.fila_actual = 1
         self.calibrado = False # Nueva bandera de seguridad
 
-        #estados del ciclo de trabajo de Robomato V1
+        # estados del ciclo de trabajo de Robomato V1
         self.ESTADO_BUSQUEDA = "buscando"
         self.ESTADO_APROXIMACION = "apuntando"
         self.ESTADO_CORTE = "cortando"
         self.ESTADO_DESCARGA = "descargando cosecha"
+        self.ESTADO_FINALIZADO = "jornada_finalizada"
         self.estado_actual = self.ESTADO_BUSQUEDA # Estado inicial       
 
     def procesar_detecciones(self, results, ancho_camara, alto_camara):
@@ -80,5 +81,6 @@ class RobomatoBrain:
         if self.fila_actual <= 4:
             self.robot.mover_a_fila(self.fila_actual)
         else:
-            print(">>> [SISTEMA] Cosecha finalizada en las 4 filas.")
-
+            print(">>> [SISTEMA] Cosecha finalizada en las 4 filas. Regresando a base...")
+            self.estado_actual = self.ESTADO_FINALIZADO
+            self.robot.regresar_a_inicio()

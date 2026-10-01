@@ -2,6 +2,7 @@
 import serial
 import time 
 import platform # Nueva librería para detectar el sistema operativo
+import json
 
 class MotorController:
     def __init__(self):
@@ -26,9 +27,9 @@ class MotorController:
         self.STEPS_Z_MM = 400# Pasos necesarios para mover 1mm en Z (Tornillo T8) 
 
         # Límites físicos (mm)
-        self.LIMIT_X = 2000
-        self.LIMIT_Y  = 1000
-        self.LIMIT_Z = 550
+        self.LIMIT_X = 1750
+        self.LIMIT_Y  = 545
+        self.LIMIT_Z = 495
         self.OFFSET_CAMARA_PINZA_Z = 50 # mm (Ajustar según montaje físico)
 
         # Estados de los finales de carrera (False = Libre, True = Presionado)
@@ -42,7 +43,7 @@ class MotorController:
         self.fila_actual_index = 0 
 
         # Definición de Filas (Eje X)
-        self.FILAS_X = [250, 750, 1250, 1750]
+        self.FILAS_X = [350, 750, 1150, 1550]
 
     def realizar_homing(self):
         """Envía al Arduino a buscar los 3 finales de carrera."""
@@ -107,12 +108,15 @@ class MotorController:
         self._enviar_comando("M3") # Comando para activar el corte en el Arduino
         time.sleep(1)
         
-        
+
     def regresar_a_inicio(self):
-        print("Moviendo actuadores a Coordenada X=0, Y=0 (Punto de descarga)")
+        """Envia fisicamente los motores a X=0, Y=0, Z=0 (Base / Punto de reposo)."""
+        print(">>> [SISTEMA] Moviendo actuadores al punto de origen (Base X=0, Y=0, Z=0)...")
+        self._enviar_comando("G0 Z0")     # 1. Sube el eje Z a posicion segura superior
+        self._enviar_comando("G0 X0 Y0")  # 2. Regresa al inicio en X e Y
         self.pos_x = 0
         self.pos_y = 0
-        time.sleep(2) # Simulación del tiempo de viaje congela el sofware por un momento para darle  tiempo  a movimiento que se ha ordenado previamente         
+        self.pos_z = 0
 
     def _enviar_comando(self, cmd):
         """Envía comandos con verificación de errores."""
@@ -154,6 +158,49 @@ class MotorController:
         self._enviar_comando(f"G0 X{target_x}")
         self.pos_x = target_x # Mover a la posición de descarga lateral
 
+    def leer_sensores(self):
+        """
+        Solicita la telemetría de sensores al Arduino Mega mediante el comando M105.
+        Devuelve un diccionario con temperatura, humedad ambiental, humedad de suelo y estado de bomba.
+        """
+        if self.ser is None:
+            # Modo Simulación cuando el Arduino no está conectado físicamente
+            return {
+                "temperatura": 26.5,
+                "humedad_ambiental": 58.0,
+                "humedad_suelo": 44,
+                "bomba": "OFF"
+            }
 
+        try:
+            self.ser.reset_input_buffer()
+            self.ser.write(b"M105\n")
+            linea = self.ser.readline().decode('utf-8', errors='ignore').strip()
+            
+            if linea.startswith("{") and linea.endswith("}"):
+                datos = json.loads(linea)
+                return {
+                    "temperatura": float(datos.get("temp", 0.0)),
+                    "humedad_ambiental": float(datos.get("hum_amb", 0.0)),
+                    "humedad_suelo": int(datos.get("hum_suelo", 0)),
+                    "bomba": str(datos.get("bomba", "OFF"))
+                }
+        except Exception as e:
+            print(f"⚠️ [SENSORES] Error al leer datos del Arduino: {e}")
 
+        # Retorno de seguridad en caso de fallo temporal de comunicación
+        return {
+            "temperatura": 25.0,
+            "humedad_ambiental": 50.0,
+            "humedad_suelo": 50,
+            "bomba": "OFF"
+        }
 
+    def controlar_bomba(self, activar: bool):
+        """
+        Activa (M106) o desactiva (M107) el relé de la bomba de agua.
+        """
+        cmd = "M106" if activar else "M107"
+        accion = "ENCENDIENDO" if activar else "APAGANDO"
+        print(f">>> [RIEGO] {accion} bomba de agua...")
+        return self._enviar_comando(cmd)
