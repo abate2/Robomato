@@ -134,3 +134,4 @@ while cap.isOpened():
 
 cap.release() # Se libera la cámara
 cv2.destroyAllWindows()
+
